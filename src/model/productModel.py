@@ -13,6 +13,9 @@ class ReqProduct(BaseModel):
     createdAt : Optional[int] = 0
     updatedAt : Optional[int] = 0
 
+    class Config:
+        validate_assignment = True
+
 class Product(Base):
     __tablename__ = 'products'
 

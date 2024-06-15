@@ -1,9 +1,10 @@
 import os
 # from model.model import URL , Source
 from uuid import uuid4
-from sqlalchemy import create_engine , Engine
+from sqlalchemy import create_engine , Engine , delete
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
+import traceback
 
 load_dotenv()
 
@@ -56,8 +57,8 @@ class PyMySQL:
     def CloseConnection(self):
         self._sesion.close()
     
-    def GetOneUseModel(self , id, Model):
-        source = self._sesion.query(Model).filter_by(id=id)
+    def GetOneUseModel(self , key , value, Model):
+        source = self._sesion.query(Model).filter_by(**{key : value})
         return source.first()
     
     def UpdateDataUseModel(self, Model , id:str , data:dict):
@@ -70,6 +71,7 @@ class PyMySQL:
             datum.update(data , synchronize_session=False)
             self._sesion.commit()
             self._sesion.refresh(datum.first())
+            return data
         else:
             print("Data Does't Exist")
 

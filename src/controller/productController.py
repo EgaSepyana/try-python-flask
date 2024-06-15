@@ -1,7 +1,9 @@
 from flask import Flask, request , Blueprint , jsonify
 from ..service.productService import ProductService
 from ..model.productModel import ReqProduct , Product
-from flask_pydantic import validate , ValidationError
+from ..model.model import Request
+from pydantic_core import ValidationError
+# from flask_pydantic import validate , ValidationError
 import traceback
 
 class ProductController:
@@ -13,16 +15,16 @@ class ProductController:
     def GetRouter(self) -> Blueprint:
         @self.__api.route('/add' , methods=['POST'])
         def add():
-            try :
+            try:
 
                 requestData:dict = request.get_json()
                 product = ReqProduct.model_validate(requestData)
-                self.__service.Upsert(product.model_dump() , False)
-                return product.model_dump() , 201
+                result = self.__service.Upsert(product.model_dump() , False)
+                return result , 201
             
             except ValidationError as err:
                 traceback.print_exc()
-                return {"error" : "error"}, 400
+                return {"error" : "validation error"}, 400
             
             except Exception as err:
                 traceback.print_exc()
@@ -31,32 +33,46 @@ class ProductController:
         @self.__api.route('/get-all' , methods=['POST'])
         def getAll():
             requestData = request.get_json()
-            return {
-                "func" : "get-all"
-            }
+            param = Request.model_validate(requestData)
+            resp = self.__service.GetAll(param.model_dump())
+            return resp , 200
 
 
         @self.__api.route('/get-one' , methods=['GET'])
         def getOne():
-            requestData = request.get_json()
-            return {
-                "func" : "get-one"
-            }
+            param_id = request.args.get("id")
+            response = self.__service.GetOne("id" , param_id)
+            if not response:
+                return {"massage" : "data is not found"} , 404
+            return response
 
 
         @self.__api.route('/update' , methods=['PUT'])
         def update():
-            requestData = request.get_json()
-            return {
-                "func" : "update"
-            }
+            try:
+
+                requestData:dict = request.get_json()
+                product = ReqProduct.model_validate(requestData)
+                result = self.__service.Upsert(product.model_dump() , True)
+                
+                if not result:
+                    return {"error" : "bad request"} , 400
+                
+                return result , 200
+            
+            except ValidationError as err:
+                traceback.print_exc()
+                return {"error" : "validation error"}, 400
+            
+            except Exception as err:
+                traceback.print_exc()
+                return {"error" : "Intenal Server Error"} , 500
 
 
         @self.__api.route('/delete' , methods=['DELETE'])
         def delete():
-            requestData = request.get_json()
-            return {
-                "func" : "delete"
-            }
+            param_id = request.args.get("id")
+            response = self.__service.Delete("id" , param_id)
+            return {"id" : response, "status" : True if response else False}
         
         return self.__api
